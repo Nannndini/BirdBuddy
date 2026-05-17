@@ -37,7 +37,7 @@ export default function SceneCanvas() {
   return (
     <>
       <div className="sceneBackdrop" aria-hidden="true">
-        <Canvas gl={{ antialias: true, alpha: true }} dpr={[1, 2]} camera={{ position: [0, 0, 9.3], fov: 45 }}>
+        <Canvas gl={{ antialias: true, alpha: true }} dpr={[1, 1.5]} camera={{ position: [0, 0, 9.3], fov: 45 }}>
           <Suspense fallback={null}>
             <CameraRig />
 
