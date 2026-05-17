@@ -40,7 +40,7 @@ export default function AlertsPage() {
             </h1>
             <span className="pulse-dot" style={{ width: '12px', height: '12px' }}></span>
           </div>
-          <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0', fontSize: '1.1rem' }}>Live community feed of notable nearby reports.</p>
+          <p style={{ color: 'var(--text-secondary)', margin: '8px 0 0 0', fontSize: '1.1rem' }}>Live community feed of notable nearby reports (Simulated data).</p>
         </div>
         <button 
           onClick={handleRefresh}

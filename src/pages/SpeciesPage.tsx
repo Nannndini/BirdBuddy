@@ -1,6 +1,6 @@
 import { SPECIES } from "@/lib/species";
 import { useMemo, useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 
 // Icons
 const ArrowLeft = () => <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>;
@@ -38,7 +38,10 @@ const Waveform = ({ playing }: { playing: boolean }) => {
 export default function SpeciesPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const s = useMemo(() => SPECIES.find((x) => x.id === id), [id]);
+  const location = useLocation();
+  const s = useMemo(() => {
+    return SPECIES.find((x) => x.id === id) || location.state?.species;
+  }, [id, location.state]);
   const [playing, setPlaying] = useState(false);
 
   // Stop playing if species changes
@@ -158,7 +161,7 @@ export default function SpeciesPage() {
           <div className="glass glass-hover" style={{ padding: '24px', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
              <div className="section-label" style={{ color: 'var(--neon-green)' }}>Bird Song</div>
              <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.6 }}>Listen to the characteristic calls and melodies.</p>
-             {s.song.length > 0 ? (
+             {s.song && s.song.length > 0 ? (
                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '24px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', marginTop: 'auto' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
                    <button 

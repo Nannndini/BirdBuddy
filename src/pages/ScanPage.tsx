@@ -117,21 +117,21 @@ export default function ScanPage() {
             <div className="panelGrid">
               <div className="mini">
                 <div className="miniLabel">HABITAT</div>
-                <div className="miniValue">Forest Edge</div>
+                <div className="miniValue">{result.top.habitat}</div>
               </div>
               <div className="mini">
                 <div className="miniLabel">RANGE</div>
-                <div className="miniValue">North America</div>
+                <div className="miniValue">{result.top.range}</div>
               </div>
               <div className="mini">
                 <div className="miniLabel">DIET</div>
-                <div className="miniValue">Insects</div>
+                <div className="miniValue">{result.top.diet}</div>
               </div>
             </div>
             
             <div className="actionsRow">
               <button className="btn btn--primary" onClick={onAdd}>Add to Collection</button>
-              <Link to={`/species/${result.top.id}`} className="btn btn--secondary">View Species Profile</Link>
+              <Link to={`/species/${result.top.id}`} state={{ species: result.top }} className="btn btn--secondary">View Species Profile</Link>
               <button className="btn btn--secondary" onClick={() => { setResult(null); setFile(null); }}>Scan Another</button>
             </div>
           </div>
