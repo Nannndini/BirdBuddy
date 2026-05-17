@@ -20,10 +20,10 @@ export default function VortexField() {
     const colors = ["#9BE1FF", "#86F7D3", "#FFFFFF"];
 
     // FEWER cubes, better composition (premium)
-    return Array.from({ length: 24 }).map((_, i) => ({
+    return Array.from({ length: 12 }).map((_, i) => ({
       position: [rnd(-10, 10), rnd(-6, 6), rnd(-15, -3)],
       rotation: [rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)],
-      scale: rnd(1.0, 2.1),
+      scale: rnd(0.4, 0.9),
       color: colors[i % colors.length]!,
       spin: rnd(0.9, 1.8)
     }));
@@ -52,7 +52,7 @@ export default function VortexField() {
       {items.map((it, i) => (
         <Float key={i} speed={1.4} rotationIntensity={0.25} floatIntensity={0.35} position={it.position}>
           <mesh rotation={it.rotation} scale={it.scale}>
-            <boxGeometry args={[1.35, 1.35, 1.35]} />
+            <boxGeometry args={[0.7, 0.7, 0.7]} />
             <meshPhysicalMaterial
               color={it.color}
               roughness={0.12}
