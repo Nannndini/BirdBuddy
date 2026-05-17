@@ -78,23 +78,10 @@ export async function identifyBird(file: File): Promise<IdentifyResult> {
       body: JSON.stringify({ base64, mimeType: file.type })
     });
 
-    const data = await response.json();
+    const parsed = await response.json();
     
-    if (data.error) {
-      throw new Error(`Gemini API Error: ${data.error.message}`);
-    }
-    
-    if (!data.candidates || !data.candidates[0]) {
-      throw new Error("Gemini returned an empty response. It might be blocking the image due to safety constraints.");
-    }
-    
-    const text = data.candidates[0].content.parts[0].text;
-    
-    let parsed;
-    try {
-      parsed = JSON.parse(text.replace(/```json|```/gi, '').trim());
-    } catch (e) {
-      throw new Error("Failed to parse Gemini response as JSON.");
+    if (parsed.error) {
+      throw new Error(`API Error: ${parsed.error.message}`);
     }
 
     const matched = SPECIES.find(s =>
