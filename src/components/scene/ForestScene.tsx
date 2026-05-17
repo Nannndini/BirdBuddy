@@ -2,9 +2,17 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
+import { AdaptiveDpr, AdaptiveEvents } from '@react-three/drei';
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback: React.ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
+}
 
 const FloatingLeaves = () => {
-  const count = 200;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const count = isMobile ? 50 : 200;
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   
@@ -56,7 +64,8 @@ const FloatingLeaves = () => {
 };
 
 const FireflyField = () => {
-  const count = 500;
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const count = isMobile ? 150 : 500;
   const pointsRef = useRef<THREE.Points>(null);
   
   const [positions, offsets, speeds] = useMemo(() => {
@@ -105,8 +114,8 @@ const FireflyField = () => {
   return (
     <points ref={pointsRef}>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={count} array={positions} itemSize={3} />
-        <bufferAttribute attach="attributes-color" count={count} array={colors} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
       <pointsMaterial size={0.04} vertexColors transparent opacity={0.8} depthWrite={false} sizeAttenuation />
     </points>
@@ -175,20 +184,25 @@ const CentralOrb = () => {
 const ForestScene = () => {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-      <Canvas camera={{ position: [0, 0, 8] }} gl={{ alpha: true }}>
-        <ambientLight intensity={0.05} />
-        <pointLight position={[5, 5, 5]} color="#fbbf24" intensity={2} />
-        <pointLight position={[-5, -3, 2]} color="#2dd4bf" intensity={1.5} />
+      <ErrorBoundary fallback={<div style={{ background: 'var(--col-deep)', width: '100%', height: '100%' }} />}>
+        <Canvas camera={{ position: [0, 0, 8] }} gl={{ alpha: true }}>
+          <AdaptiveDpr pixelated />
+          <AdaptiveEvents />
+          
+          <ambientLight intensity={0.05} />
+          <pointLight position={[5, 5, 5]} color="#fbbf24" intensity={2} />
+          <pointLight position={[-5, -3, 2]} color="#2dd4bf" intensity={1.5} />
 
-        <FloatingLeaves />
-        <FireflyField />
-        <ForestRings />
-        <CentralOrb />
+          <FloatingLeaves />
+          <FireflyField />
+          <ForestRings />
+          <CentralOrb />
 
-        <EffectComposer disableNormalPass>
-          <Bloom luminanceThreshold={0.3} mipmapBlur intensity={1.2} />
-        </EffectComposer>
-      </Canvas>
+          <EffectComposer>
+            <Bloom luminanceThreshold={0.3} mipmapBlur intensity={1.2} />
+          </EffectComposer>
+        </Canvas>
+      </ErrorBoundary>
     </div>
   );
 };
