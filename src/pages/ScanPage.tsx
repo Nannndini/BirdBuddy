@@ -2,21 +2,6 @@ import { useMemo, useState, useRef, DragEvent } from "react";
 import { identifyBird, type IdentifyResult } from "@/lib/identify";
 import { upsertCollection } from "@/lib/storage";
 import { Link } from "react-router-dom";
-import ForestScene from "@/components/scene/ForestScene";
-
-// Custom Icon for Camera
-const CameraIcon = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-    <circle cx="12" cy="13" r="4"></circle>
-  </svg>
-);
-
-const SpinnerRing = () => (
-  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1.5s linear infinite', color: 'var(--neon-green)' }}>
-    <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-  </svg>
-);
 
 export default function ScanPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -70,183 +55,111 @@ export default function ScanPage() {
     upsertCollection({
       id: result.top.id,
       addedAt: Date.now(),
-      note: undefined,
-      locationLabel: undefined,
       photoDataUrl
     });
     alert("Added to collection!");
   };
 
   return (
-    <>
-      <ForestScene />
-      
-      <div style={{ position: 'relative', zIndex: 10, minHeight: '100vh', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {/* Hero Section */}
-        <div className="fade-up" style={{ textAlign: 'center', marginBottom: '40px', marginTop: '20px' }}>
-          <h1 className="gradient-text" style={{ fontFamily: 'var(--display)', fontSize: '3.5rem', margin: '0 0 10px 0' }}>IDENTIFY ANY BIRD</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto', fontFamily: 'var(--sans)' }}>
-            Point your camera at any bird for instant AI identification
-          </p>
-        </div>
-
-        {/* Upload Zone */}
-        {!busy && !result && !err && (
-          <div 
-            className={`glass glass-hover fade-up fade-up-delay-1`}
-            style={{ 
-              width: '100%', maxWidth: '500px', height: '320px', 
-              border: `2px dashed ${isDragging ? 'var(--neon-gold)' : 'var(--neon-green)'}`,
-              borderRadius: '32px', display: 'flex', flexDirection: 'column', 
-              alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              position: 'relative', overflow: 'hidden'
-            }}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={onDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input 
-              ref={fileInputRef}
-              type="file" 
-              accept="image/*" 
-              capture="environment" 
-              style={{ display: 'none' }} 
-              onChange={(e) => {
-                if (e.target.files?.[0]) handleFile(e.target.files[0]);
-              }} 
-            />
+    <div className="container heroApp">
+      <div>
+        {!result && (
+          <div className="fade-up">
+            <h1 className="appH1">IDENTIFY ANY BIRD</h1>
+            <p className="appP">
+              Upload a photo or point your camera at any bird for instant AI identification.
+            </p>
             
-            {preview ? (
-              <img src={preview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ color: 'var(--neon-green)', marginBottom: '20px', animation: 'pulseDot 2s infinite' }}>
-                  <CameraIcon />
-                </div>
-                <div className="section-label" style={{ fontSize: '1.1rem' }}>TAP TO PHOTOGRAPH</div>
-                <div style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '0.9rem', fontFamily: 'var(--sans)' }}>or drag and drop here</div>
+            <div className="scanRow">
+              <label className="btn btn--primary" style={{ cursor: 'pointer' }}>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) handleFile(e.target.files[0]);
+                  }} 
+                />
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Upload Photo
+              </label>
+            </div>
+            
+            {err && (
+              <div style={{ marginTop: '20px', padding: '16px', borderRadius: '12px', background: 'rgba(255, 107, 138, 0.1)', border: '1px solid rgba(255,107,138,0.2)', color: '#ff6b8a' }}>
+                {err}
               </div>
             )}
           </div>
         )}
 
-        {/* AI Processing Animation */}
-        {busy && (
-          <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '320px' }}>
-            <SpinnerRing />
-            <div className="section-label" style={{ marginTop: '24px', fontSize: '1.2rem', letterSpacing: '0.1em' }}>ANALYZING...</div>
-            <div style={{ marginTop: '20px' }} className="shimmer">
-               <div style={{ width: '200px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px' }} />
-            </div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {err && !busy && (
-          <div className="glass fade-up" style={{ width: '100%', maxWidth: '500px', padding: '40px', textAlign: 'center', borderRadius: '32px', border: '1px solid rgba(255,107,138,0.3)' }}>
-            <div style={{ color: '#ff6b8a', fontSize: '1.3rem', marginBottom: '16px', fontFamily: 'var(--sans)', fontWeight: 600 }}>Identification Failed</div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontFamily: 'var(--sans)', lineHeight: 1.5 }}>{err}</p>
-            <button 
-              className="glass glass-hover" 
-              style={{ padding: '14px 32px', color: 'var(--text-primary)', border: '1px solid var(--neon-green)', background: 'transparent', borderRadius: '99px', cursor: 'pointer', fontFamily: 'var(--sans)', fontWeight: 600, fontSize: '1rem' }}
-              onClick={() => { setErr(null); setFile(null); }}
-            >
-              TRY AGAIN
-            </button>
-          </div>
-        )}
-
-        {/* Results Card */}
-        {result && !busy && (
-          <div className="glass nature-glow fade-up" style={{ width: '100%', maxWidth: '600px', padding: '32px', borderRadius: '32px', marginTop: '20px' }}>
-            <div style={{ display: 'flex', gap: '24px', flexDirection: 'column' }}>
+        {result && (
+          <div className="panel fade-up">
+            <div className="panelTop">
+              <div>
+                <div className="kicker">SPECIES IDENTIFIED</div>
+                <h2 className="appH1" style={{ margin: '4px 0 8px 0' }}>{result.top.commonName}</h2>
+                <div style={{ fontFamily: 'var(--mono)', fontStyle: 'italic', color: 'var(--fg2)' }}>{result.top.scientificName}</div>
+              </div>
               
-              {/* Image Thumbnail */}
-              {preview && (
-                <div style={{ width: '100%', height: '240px', borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <img src={preview} alt="Bird" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              )}
-
-              {/* Header */}
-              <div style={{ textAlign: 'center' }}>
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
-                  {result.top.commonName}
-                </h2>
-                <div style={{ fontFamily: 'var(--mono)', fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '1.1rem' }}>
-                  {result.top.scientificName}
+              {/* Circular Confidence Meter */}
+              <div style={{ position: 'relative', width: '64px', height: '64px' }}>
+                <svg width="64" height="64" viewBox="0 0 36 36">
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3"/>
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--neon-green)" strokeWidth="3" strokeDasharray={`${Math.round(result.confidence * 100)}, 100`} />
+                </svg>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontFamily: 'var(--mono)', fontWeight: 'bold' }}>
+                  {Math.round(result.confidence * 100)}%
                 </div>
               </div>
+            </div>
 
-              {/* Confidence Bar */}
-              <div style={{ margin: '10px 0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                  <span className="section-label">Confidence Score</span>
-                  <span style={{ color: 'var(--neon-green)', fontFamily: 'var(--mono)', fontSize: '1.1rem' }}>{Math.round(result.confidence * 100)}%</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div 
-                    style={{ 
-                      width: `${result.confidence * 100}%`, 
-                      height: '100%', 
-                      background: `linear-gradient(90deg, var(--neon-green), var(--neon-gold))`,
-                      transition: 'width 1.5s cubic-bezier(0.16, 1, 0.3, 1)'
-                    }} 
-                  />
-                </div>
+            <div className="panelGrid">
+              <div className="mini">
+                <div className="miniLabel">HABITAT</div>
+                <div className="miniValue">Forest Edge</div>
               </div>
-
-              {/* Alternatives */}
-              {result.alternatives.length > 0 && (
-                <div>
-                  <div className="section-label" style={{ marginBottom: '16px' }}>Alternative Matches</div>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {result.alternatives.map((alt, i) => (
-                      <div key={i} style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '99px', fontSize: '0.9rem', color: 'var(--text-secondary)', fontFamily: 'var(--sans)' }}>
-                        {alt.s.commonName} <span style={{ opacity: 0.5, marginLeft: '6px' }}>{Math.round(alt.confidence * 100)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: '16px', marginTop: '20px', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={onAdd}
-                  className="glass-hover"
-                  style={{ 
-                    flex: 1, padding: '16px 24px', background: 'var(--neon-green)', color: '#000', 
-                    border: 'none', borderRadius: '99px', fontFamily: 'var(--sans)', 
-                    fontWeight: 700, fontSize: '1rem', cursor: 'pointer', textAlign: 'center'
-                  }}
-                >
-                  ADD TO COLLECTION
-                </button>
-                <Link 
-                  to={`/species/${result.top.id}`}
-                  className="glass glass-hover"
-                  style={{ 
-                    flex: 1, padding: '16px 24px', background: 'transparent', color: 'var(--text-primary)', 
-                    border: '1px solid rgba(255,255,255,0.2)', borderRadius: '99px', fontFamily: 'var(--sans)', 
-                    fontWeight: 600, fontSize: '1rem', cursor: 'pointer', textAlign: 'center', textDecoration: 'none'
-                  }}
-                >
-                  VIEW SPECIES
-                </Link>
+              <div className="mini">
+                <div className="miniLabel">RANGE</div>
+                <div className="miniValue">North America</div>
               </div>
-
+              <div className="mini">
+                <div className="miniLabel">DIET</div>
+                <div className="miniValue">Insects</div>
+              </div>
+            </div>
+            
+            <div className="actionsRow">
+              <button className="btn btn--primary" onClick={onAdd}>Add to Collection</button>
+              <Link to={`/species/${result.top.id}`} className="btn btn--secondary">View Species Profile</Link>
+              <button className="btn btn--secondary" onClick={() => { setResult(null); setFile(null); }}>Scan Another</button>
             </div>
           </div>
         )}
-
       </div>
-      <style>{`
-        @keyframes spin {
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
-    </>
+
+      <div className="device fade-up fade-up-delay-1">
+        <div 
+          className="device__frame glass-hover"
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={onDrop}
+          style={{ borderColor: isDragging ? 'var(--neon-green)' : undefined }}
+        >
+          <div className="device__screen">
+            {preview ? (
+              <img src={preview} alt="Preview" className="device__img" />
+            ) : busy ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <div className="pulse-dot" />
+                <div className="device__empty" style={{ color: 'var(--neon-green)' }}>ANALYZING...</div>
+              </div>
+            ) : (
+              <div className="device__empty">DRAG & DROP IMAGE HERE</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
