@@ -72,21 +72,11 @@ export async function identifyBird(file: File): Promise<IdentifyResult> {
   });
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: file.type, data: base64 } },
-              { text: prompt }
-            ]
-          }]
-        })
-      }
-    );
+    const response = await fetch('/api/identify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64, mimeType: file.type })
+    });
 
     const data = await response.json();
     const text = data.candidates[0].content.parts[0].text;
