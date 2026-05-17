@@ -1,64 +1,62 @@
-﻿import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Sparkles } from "@react-three/drei";
-import { Suspense, useEffect, useRef } from "react";
-import VortexField from "./VortexField";
-import { EffectComposer, Bloom, Noise, Vignette } from "@react-three/postprocessing";
-import * as THREE from "three";
-
-function CameraRig() {
-  const target = useRef(new THREE.Vector3(0, 0, 9));
-  const scroll = useRef(0);
-
-  useEffect(() => {
-    const onScroll = () => {
-      const h = document.documentElement.scrollHeight - window.innerHeight;
-      scroll.current = h <= 0 ? 0 : window.scrollY / h;
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useFrame((state) => {
-    const p = state.pointer;
-    const s = scroll.current;
-
-    // More "3D website" feel: pointer parallax + scroll depth
-    target.current.set(p.x * 1.2, p.y * 0.8, 9.3 + s * 2.2);
-
-    state.camera.position.lerp(target.current, 0.05);
-    state.camera.lookAt(0, 0, -6.2);
-  });
-
-  return null;
-}
+import React from 'react';
 
 export default function SceneCanvas() {
+  const cubes = React.useMemo(() => {
+    return Array.from({ length: 8 }).map((_, i) => {
+      const size = 60 + Math.random() * 60; // 60-120px
+      const duration = 8 + Math.random() * 12; // 8s to 20s
+      const delay = Math.random() * 10;
+      const left = Math.random() * 100;
+      const top = Math.random() * 100;
+
+      return {
+        id: i,
+        size,
+        duration,
+        delay,
+        left,
+        top
+      };
+    });
+  }, []);
+
   return (
     <>
-      <div className="sceneBackdrop" aria-hidden="true">
-        <Canvas gl={{ antialias: true, alpha: true }} dpr={[1, 1.5]} camera={{ position: [0, 0, 9.3], fov: 45 }}>
-          <Suspense fallback={null}>
-            <CameraRig />
-
-            <ambientLight intensity={0.35} />
-            <directionalLight position={[7, 6, 6]} intensity={1.25} />
-            <directionalLight position={[-6, -4, 3]} intensity={0.6} />
-
-            <VortexField />
-
-            <Sparkles count={75} scale={[26, 16, 24]} size={1.2} speed={0.32} color="#9BE1FF" />
-            <Sparkles count={55} scale={[26, 16, 24]} size={1.0} speed={0.26} color="#86F7D3" />
-
-            <Environment preset="city" />
-
-            <EffectComposer>
-              <Bloom intensity={0.95} luminanceThreshold={0.22} luminanceSmoothing={0.9} />
-              <Noise opacity={0.05} />
-              <Vignette eskil={false} offset={0.22} darkness={0.72} />
-            </EffectComposer>
-          </Suspense>
-        </Canvas>
+      <div 
+        className="sceneBackdrop" 
+        aria-hidden="true" 
+        style={{ 
+          background: '#0a0a0a', 
+          position: 'fixed', 
+          inset: 0, 
+          zIndex: -1, 
+          overflow: 'hidden' 
+        }}
+      >
+        {cubes.map((cube) => (
+          <div
+            key={cube.id}
+            style={{
+              position: 'absolute',
+              left: `${cube.left}%`,
+              top: `${cube.top}%`,
+              width: `${cube.size}px`,
+              height: `${cube.size}px`,
+              border: '1px solid rgba(155,225,255,0.15)',
+              background: 'rgba(134,247,211,0.03)',
+              borderRadius: '8px',
+              animation: `floatCube ${cube.duration}s infinite linear`,
+              animationDelay: `-${cube.delay}s`,
+            }}
+          />
+        ))}
+        <style>{`
+          @keyframes floatCube {
+            0% { transform: translateY(0) rotate3d(1, 1, 1, 0deg); }
+            50% { transform: translateY(-30px) rotate3d(1, 1, 1, 180deg); }
+            100% { transform: translateY(0) rotate3d(1, 1, 1, 360deg); }
+          }
+        `}</style>
       </div>
       <div className="sceneFade" aria-hidden="true" />
     </>
