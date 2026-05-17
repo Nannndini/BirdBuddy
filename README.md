@@ -1,5 +1,6 @@
 # BirdBuddy 🦜✨
 
+🚀 **Live Demo:** [https://birdbuddy-main-fq11igsv4-nannndinis-projects.vercel.app](https://birdbuddy-main-fq11igsv4-nannndinis-projects.vercel.app)
 An immersive, AI-powered nature identifier built with React 19, React Three Fiber, and Vite. Designed as a premium mobile-first field journal for modern explorers.
 
 ## Features
