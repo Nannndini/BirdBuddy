@@ -100,7 +100,7 @@ export async function identifyBird(file: File): Promise<IdentifyResult> {
         behavior: parsed.behavior,
         rarity: 'common',
         migration: '',
-        song: [],
+        song: [{ label: "Call sample (demo)", url: "https://www2.cs.uic.edu/~i101/SoundFiles/CantinaBand60.wav" }],
       },
       confidence: parsed.confidence,
       alternatives: [],
