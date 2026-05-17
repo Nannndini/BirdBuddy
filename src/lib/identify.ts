@@ -62,105 +62,62 @@ function offlineFallback(file: File): IdentifyResult {
 }
 
 export async function identifyBird(file: File): Promise<IdentifyResult> {
-  const prompt = `Identify this bird species. Return JSON only:\n   {\n     "commonName": "string",\n     "scientificName": "string",\n     "confidence": 0.95,\n     "habitat": "string",\n     "range": "string",\n     "diet": "string",\n     "behavior": "string",\n     "funFact": "string"\n   }`;
+  const prompt = `Identify the bird in this image. Return ONLY valid JSON with no markdown backticks:
+{"commonName": "string", "scientificName": "string", "confidence": 0.85, "habitat": "string", "range": "string", "diet": "string", "behavior": "string", "funFact": "string"}`;
+
+  const base64 = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+    reader.readAsDataURL(file);
+  });
 
   try {
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error("Missing VITE_ANTHROPIC_API_KEY in .env.local");
-    }
-
-    const base64Image = await fileToBase64(file);
-    const mediaType = file.type || "image/jpeg";
-
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
-      body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: mediaType,
-                  data: base64Image
-                }
-              },
-              {
-                type: "text",
-                text: prompt
-              }
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: file.type, data: base64 } },
+              { text: prompt }
             ]
-          }
-        ]
-      })
-    });
+          }]
+        })
+      }
+    );
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Claude API error: ${res.status} ${text}`);
-    }
+    const data = await response.json();
+    const text = data.candidates[0].content.parts[0].text;
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
 
-    const data = await res.json();
-    const responseText = data.content[0].text;
-    
-    // Parse JSON from markdown code block if present
-    const jsonStr = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(jsonStr);
+    const matched = SPECIES.find(s =>
+      s.commonName.toLowerCase().includes(parsed.commonName.toLowerCase()) ||
+      parsed.commonName.toLowerCase().includes(s.commonName.toLowerCase())
+    );
 
-    const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0.95;
-
-    const mappedTop = matchSpecies(parsed.commonName, parsed.scientificName);
-    
-    let topSpecies: Species;
-    
-    if (mappedTop) {
-      topSpecies = mappedTop;
-    } else {
-      topSpecies = {
-        id: parsed.commonName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    return {
+      top: matched ?? {
+        id: parsed.scientificName.toLowerCase().replace(/\s+/g, '-'),
         commonName: parsed.commonName,
         scientificName: parsed.scientificName,
-        behavior: parsed.behavior || parsed.funFact || "Unknown",
-        diet: parsed.diet || "Unknown",
-        habitat: parsed.habitat || "Unknown",
-        range: parsed.range || "Unknown",
+        habitat: parsed.habitat,
+        range: parsed.range,
+        diet: parsed.diet,
+        behavior: parsed.behavior,
+        rarity: 'common',
+        migration: '',
         song: [],
-        migration: "Unknown",
-        rarity: "uncommon"
-      };
-    }
-
-    const alternatives = SPECIES.filter(s => s.id !== topSpecies.id).slice(0, 2).map((s, i) => ({
-      s,
-      confidence: confidence * (0.6 - i * 0.1)
-    }));
-
-    return { 
-      top: topSpecies, 
-      confidence, 
-      alternatives, 
-      aiLog: { prompt, response: `Claude API identified: ${topSpecies.commonName} (${topSpecies.scientificName})` } 
-    };
-  } catch (e: any) {
-    console.error("identifyBird error:", e);
-    const fallback = offlineFallback(file);
-    return {
-      ...fallback,
+      },
+      confidence: parsed.confidence,
+      alternatives: [],
       aiLog: {
-        prompt,
-        response: `Claude API failed: ${String(e?.message ?? e)}. Using offline fallback.`
+        prompt: prompt,
+        response: text
       }
     };
+  } catch (e: any) {
+    return offlineFallback(file);
   }
 }
