@@ -1,4 +1,4 @@
-﻿export type Species = {
+export type Species = {
   id: string;
   commonName: string;
   scientificName: string;
@@ -17,9 +17,9 @@ export const SPECIES: Species[] = [
     commonName: "Common Ostrich",
     scientificName: "Struthio camelus",
     behavior: "Fast-running ground bird; strong kicks for defense; lives in groups.",
-    diet: "Seeds, grasses, shrubs, insects.",
-    habitat: "Savannas, open grasslands, semi-arid plains.",
-    range: "Sub‑Saharan Africa.",
+    diet: "Plants, seeds, insects",
+    habitat: "African savanna/grasslands",
+    range: "Sub-Saharan Africa",
     song: [{ label: "Boom / call (demo)", url: "https://www2.cs.uic.edu/~i101/SoundFiles/StarWars3.wav" }],
     migration: "Mostly resident; local movements following food and water.",
     rarity: "uncommon"
@@ -29,9 +29,9 @@ export const SPECIES: Species[] = [
     commonName: "Indian Peafowl",
     scientificName: "Pavo cristatus",
     behavior: "Ground forager; males display iridescent trains in breeding season.",
-    diet: "Seeds, insects, small reptiles, fruit.",
-    habitat: "Open woodland edges, farms, scrub, near water.",
-    range: "South Asia (especially India, Sri Lanka).",
+    diet: "Plants, insects, small animals",
+    habitat: "Forest edges, farmland",
+    range: "South Asia",
     song: [{ label: "Call sample (demo)", url: "https://www2.cs.uic.edu/~i101/SoundFiles/BabyElephantWalk60.wav" }],
     migration: "Mostly resident; local movements with water/food availability.",
     rarity: "uncommon"

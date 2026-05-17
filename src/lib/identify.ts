@@ -1,4 +1,4 @@
-﻿import { SPECIES, type Species } from "./species";
+import { SPECIES, type Species } from "./species";
 
 export type IdentifyResult = {
   top: Species;
@@ -11,7 +11,7 @@ function norm(s: string) {
   return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
-function matchSpecies(commonName?: string, scientificName?: string) {
+function matchSpecies(commonName?: string, scientificName?: string): Species | null {
   const c = norm(commonName ?? "");
   const sc = norm(scientificName ?? "");
   return (
@@ -23,43 +23,17 @@ function matchSpecies(commonName?: string, scientificName?: string) {
   );
 }
 
-async function tryINat(file: File) {
-  // iNat CV endpoints vary by deployment; try multiple.
-  // All go through Vite proxy (/inat -> https://api.inaturalist.org)
-  const endpoints = [
-    "/inat/v1/computervision/score_image",
-    "/inat/v2/computervision/score_image",
-    "/inat/computervision/score_image"
-  ];
-
-  const form = new FormData();
-  form.append("image", file);
-
-  const errors: string[] = [];
-  for (const endpoint of endpoints) {
-    try {
-      const res = await fetch(endpoint, { method: "POST", body: form });
-      if (!res.ok) {
-        errors.push(`${endpoint}: HTTP ${res.status}`);
-        continue;
-      }
-      const data = await res.json();
-      const results: any[] = Array.isArray(data?.results)
-        ? data.results
-        : Array.isArray(data)
-          ? data
-          : [];
-      if (!results.length) {
-        errors.push(`${endpoint}: no results`);
-        continue;
-      }
-      return { endpoint, results };
-    } catch (e: any) {
-      errors.push(`${endpoint}: ${String(e?.message ?? e)}`);
-    }
-  }
-
-  throw new Error(errors.join(" | "));
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
 }
 
 function offlineFallback(file: File): IdentifyResult {
@@ -88,51 +62,104 @@ function offlineFallback(file: File): IdentifyResult {
 }
 
 export async function identifyBird(file: File): Promise<IdentifyResult> {
-  const prompt = `Identify bird from image using iNaturalist CV. file="${file.name}"`;
+  const prompt = `Identify this bird species. Return JSON only:\n   {\n     "commonName": "string",\n     "scientificName": "string",\n     "confidence": 0.95,\n     "habitat": "string",\n     "range": "string",\n     "diet": "string",\n     "behavior": "string",\n     "funFact": "string"\n   }`;
 
   try {
-    const { endpoint, results } = await tryINat(file);
+    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error("Missing VITE_ANTHROPIC_API_KEY in .env.local");
+    }
 
-    const topR = results[0];
-    const altR = results.slice(1, 3);
+    const base64Image = await fileToBase64(file);
+    const mediaType = file.type || "image/jpeg";
 
-    const topCommon = topR?.taxon?.preferred_common_name ?? topR?.taxon?.name;
-    const topSci = topR?.taxon?.name;
-
-    const scoreRaw =
-      typeof topR?.combined_score === "number" ? topR.combined_score :
-      typeof topR?.score === "number" ? topR.score :
-      0.78;
-
-    const confidence = Math.max(0.3, Math.min(0.98, scoreRaw));
-
-    const mappedTop = matchSpecies(topCommon, topSci) ?? SPECIES[0]!;
-    const alternatives = altR
-      .map((r: any, i: number) => {
-        const c = r?.taxon?.preferred_common_name ?? r?.taxon?.name;
-        const s = r?.taxon?.name;
-        const score =
-          typeof r?.combined_score === "number" ? r.combined_score :
-          typeof r?.score === "number" ? r.score :
-          0.55 - i * 0.06;
-
-        const mapped = matchSpecies(c, s);
-        return mapped ? { s: mapped, confidence: Math.max(0.25, Math.min(0.92, score)) } : null;
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 1024,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                source: {
+                  type: "base64",
+                  media_type: mediaType,
+                  data: base64Image
+                }
+              },
+              {
+                type: "text",
+                text: prompt
+              }
+            ]
+          }
+        ]
       })
-      .filter(Boolean) as { s: Species; confidence: number }[];
+    });
 
-    const response = `iNat OK via ${endpoint} | Top: ${topCommon} (${topSci}) conf=${confidence.toFixed(
-      2
-    )} | mapped="${mappedTop.commonName}"`;
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Claude API error: ${res.status} ${text}`);
+    }
 
-    return { top: mappedTop, confidence, alternatives, aiLog: { prompt, response } };
+    const data = await res.json();
+    const responseText = data.content[0].text;
+    
+    // Parse JSON from markdown code block if present
+    const jsonStr = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(jsonStr);
+
+    const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0.95;
+
+    const mappedTop = matchSpecies(parsed.commonName, parsed.scientificName);
+    
+    let topSpecies: Species;
+    
+    if (mappedTop) {
+      topSpecies = mappedTop;
+    } else {
+      topSpecies = {
+        id: parsed.commonName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        commonName: parsed.commonName,
+        scientificName: parsed.scientificName,
+        behavior: parsed.behavior || parsed.funFact || "Unknown",
+        diet: parsed.diet || "Unknown",
+        habitat: parsed.habitat || "Unknown",
+        range: parsed.range || "Unknown",
+        song: [],
+        migration: "Unknown",
+        rarity: "uncommon"
+      };
+    }
+
+    const alternatives = SPECIES.filter(s => s.id !== topSpecies.id).slice(0, 2).map((s, i) => ({
+      s,
+      confidence: confidence * (0.6 - i * 0.1)
+    }));
+
+    return { 
+      top: topSpecies, 
+      confidence, 
+      alternatives, 
+      aiLog: { prompt, response: `Claude API identified: ${topSpecies.commonName} (${topSpecies.scientificName})` } 
+    };
   } catch (e: any) {
+    console.error("identifyBird error:", e);
     const fallback = offlineFallback(file);
     return {
       ...fallback,
       aiLog: {
         prompt,
-        response: `iNat failed: ${String(e?.message ?? e)}. Using offline fallback.`
+        response: `Claude API failed: ${String(e?.message ?? e)}. Using offline fallback.`
       }
     };
   }

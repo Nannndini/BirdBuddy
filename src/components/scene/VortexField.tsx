@@ -1,4 +1,4 @@
-﻿import { Float } from "@react-three/drei";
+import { Float } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -20,10 +20,10 @@ export default function VortexField() {
     const colors = ["#9BE1FF", "#86F7D3", "#FFFFFF"];
 
     // FEWER cubes, better composition (premium)
-    return Array.from({ length: 12 }).map((_, i) => ({
-      position: [rnd(-10, 10), rnd(-6, 6), rnd(-15, -3)],
+    return Array.from({ length: 15 }).map((_, i) => ({
+      position: [rnd(-15, 15), rnd(-10, 10), rnd(-18, -2)],
       rotation: [rnd(-1, 1), rnd(-1, 1), rnd(-1, 1)],
-      scale: rnd(0.4, 0.9),
+      scale: rnd(0.25, 0.525),
       color: colors[i % colors.length]!,
       spin: rnd(0.9, 1.8)
     }));
@@ -54,7 +54,7 @@ export default function VortexField() {
   color={it.color}
   roughness={0.3}
   metalness={0.2}
-  opacity={0.4}
+  opacity={0.2}
   transparent
 />
           </mesh>
