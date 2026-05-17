@@ -106,7 +106,7 @@ export async function identifyBird(file: File): Promise<IdentifyResult> {
       alternatives: [],
       aiLog: {
         prompt: prompt,
-        response: text
+        response: JSON.stringify(parsed)
       }
     };
   } catch (e: any) {
