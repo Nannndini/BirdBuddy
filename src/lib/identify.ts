@@ -79,8 +79,23 @@ export async function identifyBird(file: File): Promise<IdentifyResult> {
     });
 
     const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(`Gemini API Error: ${data.error.message}`);
+    }
+    
+    if (!data.candidates || !data.candidates[0]) {
+      throw new Error("Gemini returned an empty response. It might be blocking the image due to safety constraints.");
+    }
+    
     const text = data.candidates[0].content.parts[0].text;
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    
+    let parsed;
+    try {
+      parsed = JSON.parse(text.replace(/```json|```/gi, '').trim());
+    } catch (e) {
+      throw new Error("Failed to parse Gemini response as JSON.");
+    }
 
     const matched = SPECIES.find(s =>
       s.commonName.toLowerCase().includes(parsed.commonName.toLowerCase()) ||
@@ -108,6 +123,27 @@ export async function identifyBird(file: File): Promise<IdentifyResult> {
       }
     };
   } catch (e: any) {
-    return offlineFallback(file);
+    console.error("identifyBird failed:", e);
+    // Return a dummy fallback that clearly shows the error to the user
+    return {
+      top: {
+        id: "error",
+        commonName: "Identification Failed",
+        scientificName: "Error",
+        habitat: "N/A",
+        range: "N/A",
+        diet: "N/A",
+        behavior: e.message || "Unknown error occurred.",
+        rarity: "common",
+        migration: "",
+        song: []
+      },
+      confidence: 0,
+      alternatives: [],
+      aiLog: {
+        prompt: prompt,
+        response: String(e)
+      }
+    };
   }
 }
