@@ -1,37 +1,44 @@
-﻿export type CollectionItem = {
-  id: string;            // species id
-  addedAt: number;
-  note?: string;
-  photoDataUrl?: string;
-  locationLabel?: string;
-};
+﻿import { supabase } from './supabase'
 
-const KEY = "birdbuddy.collection.v1";
-
-export function loadCollection(): CollectionItem[] {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed;
-  } catch {
-    return [];
-  }
+export interface CollectionItem {
+  id?: string
+  species_id: string
+  common_name: string
+  scientific_name: string
+  photo_url?: string
+  note?: string
+  location_label?: string
+  added_at: number
 }
 
-export function saveCollection(items: CollectionItem[]) {
-  localStorage.setItem(KEY, JSON.stringify(items));
+export async function loadCollection(): Promise<CollectionItem[]> {
+  const { data, error } = await supabase
+    .from('collections')
+    .select('*')
+    .order('added_at', { ascending: false })
+  if (error) return []
+  return data || []
 }
 
-export function upsertCollection(item: CollectionItem) {
-  const items = loadCollection();
-  const idx = items.findIndex((x) => x.id === item.id);
-  if (idx >= 0) items[idx] = item;
-  else items.unshift(item);
-  saveCollection(items);
+export async function upsertCollection(item: CollectionItem) {
+  const { error } = await supabase
+    .from('collections')
+    .upsert({
+      species_id: item.species_id,
+      common_name: item.common_name,
+      scientific_name: item.scientific_name,
+      photo_url: item.photo_url,
+      note: item.note,
+      location_label: item.location_label,
+      added_at: item.added_at || Date.now()
+    })
+  if (error) console.error('Supabase error:', error)
 }
 
-export function removeFromCollection(id: string) {
-  saveCollection(loadCollection().filter((x) => x.id !== id));
+export async function removeFromCollection(speciesId: string) {
+  const { error } = await supabase
+    .from('collections')
+    .delete()
+    .eq('species_id', speciesId)
+  if (error) console.error('Supabase error:', error)
 }
