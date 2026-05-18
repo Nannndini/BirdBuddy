@@ -53,10 +53,12 @@ export default function ScanPage() {
       });
     }
     upsertCollection({
-      id: result.top.id,
-      addedAt: Date.now(),
-      photoDataUrl
-    });
+  id: result.top.id,
+  addedAt: Date.now(),
+  photoDataUrl,
+  commonName: result.top.commonName,
+  scientificName: result.top.scientificName,
+});
     alert("Added to collection!");
   };
 
