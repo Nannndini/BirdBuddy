@@ -1,44 +1,43 @@
 ﻿import { supabase } from './supabase'
 
-export interface CollectionItem {
-  id?: string
-  species_id: string
-  common_name: string
-  scientific_name: string
-  photo_url?: string
+export type CollectionItem = {
+  id: string
+  addedAt: number
   note?: string
-  location_label?: string
-  added_at: number
+  photoDataUrl?: string
+  locationLabel?: string
 }
 
-export async function loadCollection(): Promise<CollectionItem[]> {
-  const { data, error } = await supabase
-    .from('collections')
-    .select('*')
-    .order('added_at', { ascending: false })
-  if (error) return []
-  return data || []
+const KEY = 'birdbuddy.collection.v1'
+
+export function loadCollection(): CollectionItem[] {
+  const raw = localStorage.getItem(KEY)
+  if (!raw) return []
+  try { return JSON.parse(raw) } catch { return [] }
 }
 
-export async function upsertCollection(item: CollectionItem) {
-  const { error } = await supabase
-    .from('collections')
-    .upsert({
-      species_id: item.species_id,
-      common_name: item.common_name,
-      scientific_name: item.scientific_name,
-      photo_url: item.photo_url,
-      note: item.note,
-      location_label: item.location_label,
-      added_at: item.added_at || Date.now()
-    })
-  if (error) console.error('Supabase error:', error)
+function saveCollection(items: CollectionItem[]) {
+  localStorage.setItem(KEY, JSON.stringify(items))
 }
 
-export async function removeFromCollection(speciesId: string) {
-  const { error } = await supabase
-    .from('collections')
-    .delete()
-    .eq('species_id', speciesId)
-  if (error) console.error('Supabase error:', error)
+export function upsertCollection(item: CollectionItem) {
+  const items = loadCollection()
+  const idx = items.findIndex(x => x.id === item.id)
+  if (idx >= 0) items[idx] = item
+  else items.unshift(item)
+  saveCollection(items)
+  // Sync to Supabase in background
+  supabase.from('collections').upsert({
+    id: item.id,
+    added_at: item.addedAt,
+    note: item.note,
+    photo_data_url: item.photoDataUrl,
+    location_label: item.locationLabel
+  }).then()
+}
+
+export function removeFromCollection(id: string) {
+  saveCollection(loadCollection().filter(x => x.id !== id))
+  // Sync to Supabase in background
+  supabase.from('collections').delete().eq('id', id).then()
 }
