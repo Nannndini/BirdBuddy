@@ -6,6 +6,8 @@ export type CollectionItem = {
   note?: string
   photoDataUrl?: string
   locationLabel?: string
+  commonName?: string
+  scientificName?: string
 }
 
 const KEY = 'birdbuddy.collection.v1'
