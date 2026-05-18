@@ -174,10 +174,10 @@ export default function CollectionPage() {
 
                    <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                      <h3 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', margin: '0 0 4px 0', color: 'var(--text-primary)' }}>
-                       {s?.commonName ?? 'Unknown Bird'}
+                       {s?.commonName ?? it.commonName ?? 'Unknown Bird'}
                      </h3>
                      <div style={{ fontFamily: 'var(--mono)', fontStyle: 'italic', fontSize: '0.95rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-                       {s?.scientificName ?? '...'}
+                       {s?.scientificName ?? it.scientificName ?? '...'}
                      </div>
                      
                      <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
